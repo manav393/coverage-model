@@ -91,20 +91,22 @@ public class OpenCoverParser extends CoverageParser {
         try {
             var eventReader = new SecureXmlParserFactory().createXmlEventReader(reader);
             var root = new ModuleNode(EMPTY);
+            boolean hasAnyModule = false;
             while (eventReader.hasNext()) {
                 XMLEvent event = eventReader.nextEvent();
                 if (event.isStartElement()) {
                     var startElement = event.asStartElement();
                     if (MODULE.equals(startElement.getName()) && startElement.getAttributeByName(MODULE_SKIPPED) == null) {
                         var hasModule = !readModule(eventReader, root);
-                        if (hasModule) {
-                            return root;
-                        }
+                        hasAnyModule = hasAnyModule || hasModule;
                     }
                 }
             }
-            handleEmptyResults(fileName, log);
-            return new ModuleNode("empty");
+            if (!hasAnyModule) {
+                handleEmptyResults(fileName, log);
+                return new ModuleNode("empty");
+            }
+            return root;
         }
         catch (XMLStreamException exception) {
             throw new ParsingException(exception);
@@ -155,7 +157,7 @@ public class OpenCoverParser extends CoverageParser {
     }
 
     private void createNodes(final Map<String, String> files, final PackageNode packageNode,
-            final List<CoverageClassHolder> classes) {
+                             final List<CoverageClassHolder> classes) {
         for (var file : files.entrySet()) {
             FileNode fileNode = packageNode.findOrCreateFileNode(getFileName(file.getValue()), getTreeStringBuilder().intern(file.getValue()));
             for (CoverageClassHolder clazz : classes) {
@@ -179,14 +181,14 @@ public class OpenCoverParser extends CoverageParser {
         MethodNode methodNode = classNode.createMethodNode(method.getMethodName(), method.getMethodName());
         var builder = new CoverageBuilder();
         var branchCoverage = builder.withMetric(Metric.BRANCH)
-                    .withCovered(method.getBranchCovered())
-                    .withMissed(method.getBranchMissed()).build();
+                .withCovered(method.getBranchCovered())
+                .withMissed(method.getBranchMissed()).build();
         var instructionCoverage = builder.withMetric(Metric.INSTRUCTION)
-                    .withCovered(method.getInstructionCovered())
-                    .withMissed(method.getInstructionMissed()).build();
+                .withCovered(method.getInstructionCovered())
+                .withMissed(method.getInstructionMissed()).build();
         var lineCoverage = builder.withMetric(Metric.LINE)
-                    .withCovered(method.getInstructionCovered())
-                    .withMissed(method.getInstructionMissed()).build();
+                .withCovered(method.getInstructionCovered())
+                .withMissed(method.getInstructionMissed()).build();
         methodNode.addValue(lineCoverage);
         methodNode.addValue(branchCoverage);
         methodNode.addValue(instructionCoverage);

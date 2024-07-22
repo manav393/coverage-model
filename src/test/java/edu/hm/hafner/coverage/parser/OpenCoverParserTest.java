@@ -150,6 +150,32 @@ class OpenCoverParserTest extends AbstractParserTest {
                 new LinesOfCode(826));
     }
 
+    @Test
+    void shouldReadMultipleModules() {
+        ModuleNode root = readReport("opencover-multiple-modules.xml");
+
+        assertThat(root.getAll(MODULE)).hasSize(3);
+        assertThat(root.getAll(PACKAGE)).hasSize(2);
+        assertThat(root.getAll(FILE)).hasSize(6);
+        assertThat(root.getAll(CLASS)).hasSize(6);
+        assertThat(root.getAll(METHOD)).hasSize(24);
+
+        List<Node> modules = root.getAll(MODULE);
+        assertThat(modules).extracting(Node::getName)
+                .containsExactlyInAnyOrder("-", "MyLogging", "MyLogging2");
+
+        assertThat(root.aggregateValues()).contains(
+                Coverage.valueOf(MODULE, "3/3"),
+                Coverage.valueOf(PACKAGE, "2/2"),
+                Coverage.valueOf(FILE, "6/6"),
+                Coverage.valueOf(CLASS, "6/6"),
+                Coverage.valueOf(METHOD, "22/24"),
+                Coverage.valueOf(LINE, "129/145"),
+                Coverage.valueOf(BRANCH, "38/52"),
+                Coverage.valueOf(INSTRUCTION, "129/145")
+        );
+    }
+
     private void verifyLineCoverage(final FileNode a) {
         var children = a.getAll(METHOD).stream()
                 .filter(m -> "System.Boolean MyLogging.FancyClass::get_IsMyCodeWrittenWell()System.Boolean MyLogging.FancyClass::get_IsMyCodeWrittenWell()".equals(m.getName()))
